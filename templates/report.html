@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Site Audit -- {{ site_url }}</title>
+<style>
+  @page { size: letter; margin: 0.6in; }
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #1a1a1a; font-size: 10.5pt; line-height: 1.4;
+  }
+  .brand { color: #d35400; font-weight: 700; letter-spacing: 0.5pt; }
+  h1 { font-size: 22pt; margin: 0 0 4pt 0; }
+  .url { font-size: 11pt; color: #555; margin-bottom: 14pt; word-break: break-all; }
+  .score-card {
+    display: flex; gap: 14pt; margin: 12pt 0 18pt 0;
+    padding: 10pt 14pt; background: #f5f5f0; border-radius: 6pt;
+  }
+  .score-card .big { font-size: 30pt; font-weight: 700; color: #d35400; }
+  .score-card .label { font-size: 9pt; color: #555; text-transform: uppercase; letter-spacing: 0.5pt; }
+  .pill { display: inline-block; padding: 1pt 6pt; border-radius: 8pt; font-size: 8pt;
+          font-weight: 700; text-transform: uppercase; letter-spacing: 0.5pt; }
+  .pill.pass { background: #dff5e1; color: #1f6b2b; }
+  .pill.warn { background: #fff3cd; color: #7a5300; }
+  .pill.fail { background: #f8d7da; color: #842029; }
+  .pill.high { background: #f8d7da; color: #842029; }
+  .pill.medium { background: #fff3cd; color: #7a5300; }
+  .pill.low { background: #e2e3e5; color: #41464b; }
+  h2 { font-size: 13pt; margin: 18pt 0 6pt 0; border-bottom: 1px solid #ccc; padding-bottom: 3pt; }
+  h3 { font-size: 11pt; margin: 10pt 0 2pt 0; }
+  .check-row { padding: 4pt 0; border-bottom: 1px solid #eee; }
+  .check-row .name { font-weight: 600; }
+  .check-row .detail { color: #444; font-size: 10pt; }
+  .finding { margin: 8pt 0; padding: 8pt 10pt; background: #fafafa; border-left: 3pt solid #d35400; }
+  .finding .title { font-weight: 700; font-size: 11pt; }
+  .finding .body { margin-top: 3pt; }
+  .finding .reco { margin-top: 4pt; font-size: 10pt; color: #2a2a2a; }
+  .summary-box {
+    background: #fffbe9; border: 1px solid #f0d97c; padding: 10pt 12pt;
+    border-radius: 4pt; margin: 10pt 0;
+  }
+  ol li { margin-bottom: 3pt; }
+  .footer {
+    margin-top: 22pt; padding-top: 8pt; border-top: 1px solid #ccc;
+    font-size: 8.5pt; color: #777; text-align: center;
+  }
+  .meta { font-size: 9pt; color: #666; }
+</style>
+</head>
+<body>
+
+<div class="brand">SITE AUDIT REPORT</div>
+<h1>{{ site_url.split('//')[-1].split('/')[0] }}</h1>
+<div class="url">{{ site_url }}</div>
+
+<div class="score-card">
+  <div>
+    <div class="big">{{ heur.summary.score }}</div>
+    <div class="label">Overall Score</div>
+  </div>
+  <div>
+    <div class="big" style="color: #1f6b2b;">{{ heur.summary.pass }}</div>
+    <div class="label">Pass</div>
+  </div>
+  <div>
+    <div class="big" style="color: #7a5300;">{{ heur.summary.warn }}</div>
+    <div class="label">Warn</div>
+  </div>
+  <div>
+    <div class="big" style="color: #842029;">{{ heur.summary.fail }}</div>
+    <div class="label">Fail</div>
+  </div>
+  <div style="margin-left: auto; align-self: center;">
+    <div class="meta">HTTP {{ status }}</div>
+    <div class="meta">{{ ttfb_ms }} ms response</div>
+    <div class="meta">{{ "%.0f"|format(size_kb) }} KB HTML</div>
+  </div>
+</div>
+
+{% if llm and llm.executive_summary %}
+<div class="summary-box">
+  <div style="font-weight: 700; margin-bottom: 4pt;">Executive Summary</div>
+  <div>{{ llm.executive_summary }}</div>
+  {% if llm.biggest_opportunity %}
+  <div style="margin-top: 6pt;"><strong>Biggest Opportunity:</strong> {{ llm.biggest_opportunity }}</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if llm and llm.findings %}
+<h2>Strategic Findings</h2>
+{% for f in llm.findings %}
+<div class="finding">
+  <div>
+    <span class="title">{{ f.title }}</span>
+    <span class="pill {{ f.severity|default('medium') }}">{{ f.severity|default('medium') }}</span>
+    <span class="meta">{{ f.category }}</span>
+  </div>
+  <div class="body">{{ f.observation }}</div>
+  <div class="reco"><strong>Recommendation:</strong> {{ f.recommendation }}</div>
+</div>
+{% endfor %}
+{% endif %}
+
+<h2>Technical Checks</h2>
+{% set categories = {} %}
+{% for c in heur.checks %}
+  {% if c.category not in categories %}
+    {% set _ = categories.update({c.category: []}) %}
+  {% endif %}
+  {% set _ = categories[c.category].append(c) %}
+{% endfor %}
+{% for cat, checks in categories.items() %}
+<h3>{{ cat }}</h3>
+{% for c in checks %}
+<div class="check-row">
+  <span class="pill {{ c.status }}">{{ c.status }}</span>
+  <span class="name">{{ c.name }}</span>
+  <div class="detail">{{ c.detail }}</div>
+</div>
+{% endfor %}
+{% endfor %}
+
+{% if llm and llm.next_steps %}
+<h2>Recommended Next Steps</h2>
+<ol>
+  {% for step in llm.next_steps %}
+  <li>{{ step }}</li>
+  {% endfor %}
+</ol>
+{% endif %}
+
+<div class="footer">
+  Generated {{ generated_at }} by AI Site Auditor
+</div>
+
+</body>
+</html>

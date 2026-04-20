@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+audit_*.pdf
+.env
+.venv/
+venv/
