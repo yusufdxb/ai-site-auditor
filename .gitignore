@@ -1,6 +1,6 @@
 __pycache__/
 *.pyc
-audit_*.pdf
+/audit_*.pdf
 .env
 .venv/
 venv/
